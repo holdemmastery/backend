@@ -9,7 +9,7 @@ const app: Express = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json()) ;
-app.get("/get-problem", (req: Request, res: Response) => {
+app.post("/get-problem", (req: Request, res: Response) => {
     if (!req.body['problem_id']) {
       // failure status
     }
@@ -21,7 +21,7 @@ app.get("/get-problem", (req: Request, res: Response) => {
 });
 
 
-app.get("/get-next-problem", (req: Request, res: Response) => {
+app.post("/get-next-problem", (req: Request, res: Response) => {
   if (!req.body['userId']) {
     // failure status
   }
