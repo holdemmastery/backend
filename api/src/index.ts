@@ -1,6 +1,6 @@
 
 import express, { Express, Request, Response } from 'express';
-import { getProblem, getUncompletedProblemId, completedProblem, createNewUser, login } from './db';
+import { getProblem, getUncompletedProblemId, completedProblem, createNewUser, login, getUserElo } from './db';
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -11,7 +11,7 @@ const port = process.env.PORT || 3000;
 app.use(express.json()) ;
 app.get("/get-problem", (req: Request, res: Response) => {
     if (!req.body['problem_id']) {
-      // failure
+      // failure status
     }
 
     const problemId: string = req.body['problem_id'];
@@ -20,14 +20,27 @@ app.get("/get-problem", (req: Request, res: Response) => {
     });
 });
 
+
 app.get("/get-next-problem", (req: Request, res: Response) => {
   if (!req.body['userId']) {
-    // status code
+    // failure status
   }
 
   const userId: string = req.body['userId'];
   getUncompletedProblemId(userId).then(result => result ? res.json({ message: "Successfully retrieved uncompleted problem", problemId : result }) : 
     res.json({ message: "No uncompleted problems remain" }));
+});
+
+app.get('/get-user-elo', (req: Request, res: Response) => {
+  if (!req.body['userId']) {
+    // failure status
+  }
+
+  const userId: string = req.body['userId'];
+  getUserElo(userId).then(elo => res.json(
+    {
+      userElo: elo
+    }));
 });
 
 
@@ -45,7 +58,16 @@ app.post("/finish-problem", (req: Request, res: Response) => {
   }
   
   completedProblem(req.body['problem_id'], req.body['userId'], req.body['player_action']).then(status => {
-    status ? res.json({ message: "Successfully marked problem as completed. "}) : res.json({ message : "Something went wrong! "});
+    status[0] ? res.json(
+      { 
+        message: "Successfully marked problem as completed. ",
+        updatedElo: status[1]
+      }) 
+      : 
+      res.json(
+        { 
+          message : "Something went wrong! "
+        });
   });
 });
 

@@ -96,17 +96,27 @@ export async function getUncompletedProblemId(player_id: string) : Promise<strin
     return ids.length ? ids[0] : "";
 }
 
-export async function completedProblem(problemId: string, player_id: string, action: string) : Promise<boolean> {
+export async function getUserElo(player_id: string) : Promise<number> {
     await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
 
     const retrievedPlayer = await Users.findById(player_id);
     if (!retrievedPlayer) {
-        return false;
+        return -1;
+    }
+    return retrievedPlayer.user_elo;
+}
+
+export async function completedProblem(problemId: string, player_id: string, action: string) : Promise<[boolean, number]> {
+    await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
+
+    const retrievedPlayer = await Users.findById(player_id);
+    if (!retrievedPlayer) {
+        return [false, -1];
     }
 
     const retrievedProblem = await Problems.findById(problemId);
     if (!retrievedProblem) {
-        return false;
+        return [false, -1];
     }
 
     const outcome: number = determineOutcome(action, retrievedProblem.river_option_evs);
@@ -117,7 +127,6 @@ export async function completedProblem(problemId: string, player_id: string, act
     playerElo = adjustRating(playerElo, problemElo, outcome);
     problemElo = adjustRating(problemElo, playerElo, 1 - outcome);
     
-
     const completedProblem: ICompletedProblem = {
         problem_id: problemId,
         time_completed: Date.now().toString(),
@@ -128,7 +137,7 @@ export async function completedProblem(problemId: string, player_id: string, act
     retrievedProblem.problem_elo = problemElo;
     await retrievedPlayer.save();
     await retrievedProblem.save();
-    return true;
+    return [true, playerElo];
 }
 
 export async function createNewUser(userId: string, pword: string) : Promise<boolean> {
