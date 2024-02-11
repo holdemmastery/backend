@@ -38,10 +38,7 @@ app.post("/finish-problem", (req: Request, res: Response) => {
     // failure status
   }
   const problemId: string = req.body['problem_id'];
-  
-
-
-
+  completedProblem(problemId, req.body['player_id'], req.body['player_action']);
 });
 
 app.listen(port, () => {

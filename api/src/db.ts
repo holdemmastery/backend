@@ -109,12 +109,20 @@ export async function completedProblem(problemId: string, player_id: string, act
     return true;
 }
 
-export async function createNewUser(userId: string, password: string) : Promise<void> {
+export async function createNewUser(userId: string, pword: string) : Promise<void> {
     // TODO: 
+    await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
+    const new_user: IUser = {
+        user_id: userId,
+        password: pword,
+        problems_completed: []
+    };
+    await Users.insertMany(new_user);
 }
 
 export async function login(userId: string, inputtedPassword: string) : Promise<void> {
     // TODO:
+    await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
 }
 
 export async function putNewProblem(problemId: number) : Promise<void> {
