@@ -58,7 +58,7 @@ const problemSchema = new Schema<IProblem> ({
     hole_cards: { type: String, required: true },
     board: { type: String, required: true },
 
-    action_history: {type: [], requiredd: true},
+    action_history: {type: [], required: true},
   
     river_option_evs: { type: [], required: true },
 });
