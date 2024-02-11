@@ -50,7 +50,7 @@ app.post("/finish-problem", (req: Request, res: Response) => {
 });
 
 app.post("/create-user", (req: Request, res: Response) => {
-  if (!req.body['userId']) {
+  if (!req.body['username']) {
     // failure status
   }
 
@@ -58,9 +58,9 @@ app.post("/create-user", (req: Request, res: Response) => {
     // failure status
   }
 
-  const user_id: string = req.body['userId'];
+  const username: string = req.body['username'];
   const password: string = req.body['password'];
-  createNewUser(user_id, password).then(status => {
+  createNewUser(username, password).then(status => {
     status ? res.json({ message: "Successfully created new user. "}) : res.json({ message: "Username already exists! "});
   });
 });

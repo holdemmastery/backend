@@ -1,4 +1,5 @@
 import { Schema, model, connect } from 'mongoose';
+import { determineOutcome, adjustRating } from './rating';
 
 interface ICompletedProblem {
     problem_id: string;
@@ -6,7 +7,7 @@ interface ICompletedProblem {
     player_action: string;
 }
 
-interface IEVs {
+export interface IEV {
     option: string;
     ev: number;
 }
@@ -18,7 +19,9 @@ interface IHistoryAction {
 }
 
 interface IProblem {
+    problem_elo: number;
     time_created: number;
+
     hero_position: string;
     villain_position: string;
 
@@ -26,30 +29,34 @@ interface IProblem {
     board: string;
 
     action_history: Array<IHistoryAction>
-
-    river_option_evs: Array<IEVs>;
+    river_option_evs: Array<IEV>;
 }
 
 interface IProblemReturn {
     holeCards: string;
     boardCards: string;
     actionHistory: Array<IHistoryAction>;
+    problemElo: number;
 }
 
 interface IUser {
+    user_elo: number;
     user_id: string;
     password: string;
     problems_completed: Array<ICompletedProblem>;
 }
   
 const usersSchema = new Schema<IUser> ({
+    user_elo: { type: Number, required: true },
     user_id: { type: String, required: true },
     password: { type: String, required: true },
     problems_completed: { type: [], required: true}
 });
 
 const problemSchema = new Schema<IProblem> ({
+    problem_elo: { type: Number, required: true },
     time_created: { type: Number, required: true },
+    
     hero_position: { type: String, required: true},
     villain_position: { type: String, required: true },
 
@@ -57,22 +64,22 @@ const problemSchema = new Schema<IProblem> ({
     board: { type: String, required: true },
 
     action_history: {type: [], required: true},
-  
     river_option_evs: { type: [], required: true },
 });
 
-const Problem = model<IProblem> ('problems', problemSchema);
+const Problems = model<IProblem> ('problems', problemSchema);
 const Users = model<IUser> ('users', usersSchema);
 
 export async function getProblem(problemId: string) : Promise<IProblemReturn> {
     // problems, users collection.
     await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
-    const firstProblem = await Problem.findById(problemId);
+    const firstProblem = await Problems.findById(problemId);
     const data = {
         problemId: problemId,
         holeCards: firstProblem? firstProblem['hole_cards'] : '',
         boardCards: firstProblem? firstProblem['board'] : '',
-        actionHistory: firstProblem? firstProblem['action_history'] : []
+        actionHistory: firstProblem? firstProblem['action_history'] : [],
+        problemElo: firstProblem? firstProblem['problem_elo'] : 0
     };
     return data;
 }
@@ -81,7 +88,7 @@ export async function getUncompletedProblemId(player_id: string) : Promise<strin
     await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
 
     const retrievedPlayer = await Users.findById(player_id);
-    let ids: Array<string> = await Problem.distinct('_id', {});
+    let ids: Array<string> = await Problems.distinct('_id', {});
     
     for (const completedProblem of retrievedPlayer?.problems_completed? retrievedPlayer.problems_completed : []) {
         ids = ids.filter(id => id != completedProblem.problem_id);
@@ -97,13 +104,30 @@ export async function completedProblem(problemId: string, player_id: string, act
         return false;
     }
 
+    const retrievedProblem = await Problems.findById(problemId);
+    if (!retrievedProblem) {
+        return false;
+    }
+
+    const outcome: number = determineOutcome(action, retrievedProblem.river_option_evs);
+
+    let playerElo: number = retrievedPlayer.user_elo;
+    let problemElo: number = retrievedProblem.problem_elo;
+    
+    playerElo = adjustRating(playerElo, problemElo, outcome);
+    problemElo = adjustRating(problemElo, playerElo, 1 - outcome);
+    
+
     const completedProblem: ICompletedProblem = {
         problem_id: problemId,
         time_completed: Date.now().toString(),
         player_action: action
     }
     retrievedPlayer.problems_completed.push(completedProblem);
+    retrievedPlayer.user_elo = playerElo;
+    retrievedProblem.problem_elo = problemElo;
     await retrievedPlayer.save();
+    await retrievedProblem.save();
     return true;
 }
 
@@ -114,6 +138,7 @@ export async function createNewUser(userId: string, pword: string) : Promise<boo
         return false;
     }
     const new_user: IUser = {
+        user_elo: 1000,
         user_id: userId,
         password: pword,
         problems_completed: []
@@ -137,19 +162,20 @@ export async function login(username: string, inputtedPassword: string) : Promis
     return retrievedPlayer?._id.toString();
 }
 
-export async function putNewProblem(problemId: number) : Promise<void> {
+export async function putNewProblem() : Promise<void> {
     await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
-    const problem = new Problem({
-        problem_id: 10,
+    const problem = new Problems({
+        problem_elo: 1000,
+        time_created: Date.now().toString(),
 
         hero_position: 'CO',
         villain_position: 'BTN',
 
         hole_cards: '4hTc',
-        cards: '2h3s4dQhKd',
+        board: '2h3s4dQhKd',
 
-        correct_action_river: 'asdf',
+        action_history: [],
         river_actions_evs: []
     });
-    await Problem.create(problem);
+    await Problems.create(problem);
 }
