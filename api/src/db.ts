@@ -88,7 +88,7 @@ export async function getUncompletedProblemId(player_id: string) : Promise<strin
     for (const completedProblem of retrievedPlayer?.problems_completed? retrievedPlayer.problems_completed : []) {
         ids = ids.filter(id => id != completedProblem.problem_id);
     }
-    return ids[0];
+    return ids.length ? ids[0] : "";
 }
 
 export async function completedProblem(problemId: string, player_id: string, action: string) : Promise<boolean> {
@@ -105,24 +105,40 @@ export async function completedProblem(problemId: string, player_id: string, act
         player_action: action
     }
     retrievedPlayer.problems_completed.push(completedProblem);
-    await Users.updateOne({ user_id: player_id }, retrievedPlayer ? retrievedPlayer : {});
+    await retrievedPlayer.save();
     return true;
 }
 
-export async function createNewUser(userId: string, pword: string) : Promise<void> {
-    // TODO: 
+export async function createNewUser(userId: string, pword: string) : Promise<boolean> {
     await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
+    const usernameExists: boolean = (await Users.exists({ user_id: userId })) != null;
+    if (usernameExists) {
+        return false;
+    }
     const new_user: IUser = {
         user_id: userId,
         password: pword,
         problems_completed: []
     };
-    await Users.insertMany(new_user);
+    await Users.insertMany([new_user]);
+    return true;
 }
 
-export async function login(userId: string, inputtedPassword: string) : Promise<void> {
+export async function login(username: string, inputtedPassword: string) : Promise<string> {
     // TODO:
     await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
+
+    const retrievedPlayer = await Users.findOne({ user_id: username });
+    if (!retrievedPlayer) {
+        console.log("no such user");
+        return '';
+    }
+
+    if (retrievedPlayer?.password !== inputtedPassword) {
+        console.log("passwords do not match");
+        return '';
+    }
+    return retrievedPlayer?._id.toString();
 }
 
 export async function putNewProblem(problemId: number) : Promise<void> {
