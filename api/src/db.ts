@@ -74,8 +74,7 @@ export async function getProblem(problemId: string) : Promise<IProblemReturn> {
     // problems, users collection.
     await connect('mongodb+srv://dev:hacklytics@hack.ufwzptn.mongodb.net/db');
     const firstProblem = await Problems.findById(problemId);
-    const data = {
-        problemId: problemId,
+    const data: IProblemReturn = {
         holeCards: firstProblem? firstProblem['hole_cards'] : '',
         boardCards: firstProblem? firstProblem['board'] : '',
         actionHistory: firstProblem? firstProblem['action_history'] : [],
