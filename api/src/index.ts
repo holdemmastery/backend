@@ -31,7 +31,7 @@ app.get("/get-next-problem", (req: Request, res: Response) => {
     res.json({ message: "No uncompleted problems remain" }));
 });
 
-app.get('/get-user-elo', (req: Request, res: Response) => {
+app.post('/get-user-elo', (req: Request, res: Response) => {
   if (!req.body['userId']) {
     // failure status
   }
