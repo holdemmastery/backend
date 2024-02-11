@@ -1,16 +1,12 @@
 
 import express, { Express, Request, Response } from 'express';
 import { getProblem, getUncompletedProblemId, completedProblem, createNewUser, login } from './db';
-import fetch from 'node-fetch';
 import dotenv from "dotenv";
 
 dotenv.config();
 
-
-
 const app: Express = express();
 const port = process.env.PORT || 3000;
-
 
 app.use(express.json()) ;
 app.get("/get-problem", (req: Request, res: Response) => {

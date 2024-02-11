@@ -1,7 +1,5 @@
 import { Schema, model, connect } from 'mongoose';
 
-
-
 interface ICompletedProblem {
     problem_id: string;
     time_completed: string;
@@ -130,12 +128,10 @@ export async function login(username: string, inputtedPassword: string) : Promis
 
     const retrievedPlayer = await Users.findOne({ user_id: username });
     if (!retrievedPlayer) {
-        console.log("no such user");
         return '';
     }
 
     if (retrievedPlayer?.password !== inputtedPassword) {
-        console.log("passwords do not match");
         return '';
     }
     return retrievedPlayer?._id.toString();
@@ -156,5 +152,4 @@ export async function putNewProblem(problemId: number) : Promise<void> {
         river_actions_evs: []
     });
     await Problem.create(problem);
-    console.log("Put new problem " + problemId);
 }
